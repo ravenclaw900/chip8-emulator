@@ -31,7 +31,6 @@ impl Stack {
             .checked_sub(1)
             .expect("emulated program popped from empty stack");
         // Old values are not overwritten, but shouldn't cause any problems
-        let val = self.data[self.cur_idx];
-        val
+        self.data[self.cur_idx]
     }
 }
