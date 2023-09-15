@@ -78,7 +78,8 @@ fn jump(chip8: &mut Chip8, addr: u16) {
 }
 
 fn add(chip8: &mut Chip8, reg: Register, val: u8) {
-    chip8.registers[reg] += val;
+    // Adding should wrap around
+    chip8.registers[reg] = chip8.registers[reg].wrapping_add(val);
 }
 
 fn call_subroutine(chip8: &mut Chip8, addr: u16) {

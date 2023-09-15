@@ -8,4 +8,4 @@ fastrand = "2.0.0"
 log = "0.4.20"
 minifb = "0.25.0"
 pico-args = "0.5.0"
-simple_logger = "4.2.0"
+simple_logger = { version = "4.2.0", default-features = false, features = ["colors"] }

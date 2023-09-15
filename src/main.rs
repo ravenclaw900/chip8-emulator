@@ -21,7 +21,6 @@ fn main() {
     simple_logger::SimpleLogger::new()
         .with_level(log::LevelFilter::Info)
         .env()
-        .with_local_timestamps()
         .init()
         .unwrap();
 
