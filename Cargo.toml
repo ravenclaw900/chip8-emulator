@@ -4,7 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-anyhow = "1.0.75"
 fastrand = "2.0.0"
 log = "0.4.20"
 minifb = "0.25.0"

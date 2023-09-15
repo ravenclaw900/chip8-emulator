@@ -2,7 +2,6 @@
 
 use std::time::{Duration, Instant};
 
-use anyhow::Context;
 use instructions::Instruction;
 use log::{debug, info};
 use minifb::{Window, WindowOptions};
@@ -18,12 +17,17 @@ mod stack;
 pub const WIDTH: usize = 64;
 pub const HEIGHT: usize = 32;
 
-fn main() -> anyhow::Result<()> {
-    simple_logger::init().unwrap();
+fn main() {
+    simple_logger::SimpleLogger::new()
+        .with_level(log::LevelFilter::Info)
+        .env()
+        .with_local_timestamps()
+        .init()
+        .unwrap();
 
-    let args = cli::parse_args().context("failed to parse arguments")?;
+    let args = cli::parse_args().expect("failed to parse arguments");
 
-    let prg = std::fs::read(args.program).context("failed to open program")?;
+    let prg = std::fs::read(args.program).expect("failed to open program");
 
     info!("Starting emulator");
 
@@ -41,7 +45,7 @@ fn main() -> anyhow::Result<()> {
             ..Default::default()
         },
     )
-    .context("failed to create window")?;
+    .expect("failed to create window");
 
     // We do our own limiting
     window.limit_update_rate(None);
@@ -73,14 +77,17 @@ fn main() -> anyhow::Result<()> {
         debug!("Got instruction 0x{:X}", instruction);
 
         chip8.pc += 2;
-        let instruction = Instruction::parse(instruction)?;
+        let Some(instruction) = Instruction::parse(instruction) else {
+            log::error!("Failed to parse instruction, skipping");
+            continue;
+        };
         debug!("Parsed instruction: {:?}", instruction);
 
-        instruction.execute(&mut chip8, &mut buf, &window, &args.colors)?;
+        instruction.execute(&mut chip8, &mut buf, &window, &args.colors);
 
         window
             .update_with_buffer(&buf, WIDTH, HEIGHT)
-            .context("failed to update window")?;
+            .expect("failed to update window");
 
         // 700 Hz
         if instruction_timer.elapsed() < Duration::from_micros(1430) {
@@ -89,6 +96,4 @@ fn main() -> anyhow::Result<()> {
 
         instruction_timer = Instant::now();
     }
-
-    Ok(())
 }

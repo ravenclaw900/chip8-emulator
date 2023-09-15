@@ -1,4 +1,3 @@
-use anyhow::bail;
 use minifb::{Key, Window};
 
 const POSSIBLE_KEYS: [Key; 16] = [
@@ -38,12 +37,13 @@ fn key_to_hex(key: Key) -> u8 {
         Key::R => 0xD,
         Key::F => 0xE,
         Key::V => 0xF,
+        // Only possible key values that will be converted, so this will never happen
         _ => unreachable!(),
     }
 }
 
-fn hex_to_key(hex: u8) -> anyhow::Result<Key> {
-    Ok(match hex {
+fn hex_to_key(hex: u8) -> Option<Key> {
+    Some(match hex {
         0x0 => Key::X,
         0x1 => Key::Key1,
         0x2 => Key::Key2,
@@ -60,7 +60,10 @@ fn hex_to_key(hex: u8) -> anyhow::Result<Key> {
         0xD => Key::R,
         0xE => Key::F,
         0xF => Key::V,
-        _ => bail!("invalid hex value for key"),
+        _ => {
+            log::error!("invalid hex value for key");
+            return None;
+        }
     })
 }
 
@@ -72,7 +75,7 @@ pub fn get_pressed_key(window: &Window) -> Option<u8> {
         .map(key_to_hex)
 }
 
-pub fn is_key_pressed(window: &Window, key_hex: u8) -> anyhow::Result<bool> {
+pub fn is_key_pressed(window: &Window, key_hex: u8) -> Option<bool> {
     let key = hex_to_key(key_hex)?;
-    Ok(window.is_key_down(key))
+    Some(window.is_key_down(key))
 }

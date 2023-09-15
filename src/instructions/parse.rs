@@ -1,5 +1,3 @@
-use anyhow::bail;
-
 use crate::registers::Register;
 
 use super::Instruction;
@@ -15,7 +13,7 @@ struct InstructionParts {
 }
 
 impl Instruction {
-    pub fn parse(instruction: u16) -> anyhow::Result<Self> {
+    pub fn parse(instruction: u16) -> Option<Self> {
         // Various parts of the instruction
         // (All unwraps are safe because of bitmasks)
         let parts = InstructionParts {
@@ -23,9 +21,9 @@ impl Instruction {
             // Get first nibble
             cat: (instruction >> 12).try_into().unwrap(),
             // Get second nibble
-            x: ((instruction >> 8) & 0x0F).try_into()?,
+            x: Register::from_u16((instruction >> 8) & 0x0F)?,
             // Get third nibble
-            y: ((instruction >> 4) & 0x00F).try_into()?,
+            y: Register::from_u16((instruction >> 4) & 0x00F)?,
             // Get fourth nibble
             n: (instruction & 0x000F).try_into().unwrap(),
             // Get second byte (third and fourth nibble)
@@ -37,8 +35,8 @@ impl Instruction {
         Self::parse_instruction(&parts)
     }
 
-    fn parse_instruction(parts: &InstructionParts) -> anyhow::Result<Self> {
-        Ok(match *parts {
+    fn parse_instruction(parts: &InstructionParts) -> Option<Self> {
+        Some(match *parts {
             InstructionParts { full: 0x00E0, .. } => Self::ClearDisplay,
             InstructionParts { full: 0x00EE, .. } => Self::ReturnSubroutine,
             InstructionParts { cat: 0x1, nnn, .. } => Self::Jump { addr: nnn },
@@ -97,13 +95,16 @@ impl Instruction {
             } => Self::SkipIfNotKey { keyreg: x },
             // Delegate to misc 0xF category instruction function
             InstructionParts { cat: 0xF, .. } => Self::parse_category_f_instruction(parts)?,
-            _ => bail!("invalid instruction"),
+            _ => {
+                log::error!("invalid instruction {:X}", parts.full);
+                return None;
+            }
         })
     }
 
-    fn parse_logic_instruction(parts: &InstructionParts) -> anyhow::Result<Self> {
+    fn parse_logic_instruction(parts: &InstructionParts) -> Option<Self> {
         // All instructions in this are category 0x8, so no need to check that
-        Ok(match *parts {
+        Some(match *parts {
             InstructionParts { x, y, n: 0x0, .. } => Self::SetReg { reg1: x, reg2: y },
             InstructionParts { x, y, n: 0x1, .. } => Self::Or { reg1: x, reg2: y },
             InstructionParts { x, y, n: 0x2, .. } => Self::And { reg1: x, reg2: y },
@@ -113,13 +114,16 @@ impl Instruction {
             InstructionParts { x, y, n: 0x7, .. } => Self::Sub2 { reg1: x, reg2: y },
             InstructionParts { x, y, n: 0x6, .. } => Self::Shr { reg1: x, reg2: y },
             InstructionParts { x, y, n: 0xE, .. } => Self::Shl { reg1: x, reg2: y },
-            _ => bail!("invalid logic instruction"),
+            _ => {
+                log::error!("invalid logic instruction {:X}", parts.full);
+                return None;
+            }
         })
     }
 
-    fn parse_category_f_instruction(parts: &InstructionParts) -> anyhow::Result<Self> {
+    fn parse_category_f_instruction(parts: &InstructionParts) -> Option<Self> {
         // All instructions in this are category 0xF, so no need to check that
-        Ok(match *parts {
+        Some(match *parts {
             InstructionParts { x, nn: 0x07, .. } => Self::GetDelayTimer { outreg: x },
             InstructionParts { x, nn: 0x15, .. } => Self::SetDelayTimer { inreg: x },
             InstructionParts { x, nn: 0x18, .. } => Self::SetSoundTimer { inreg: x },
@@ -129,7 +133,10 @@ impl Instruction {
             InstructionParts { x, nn: 0x33, .. } => Self::BinToDec { inreg: x },
             InstructionParts { x, nn: 0x55, .. } => Self::StoreMem { inreg_max: x },
             InstructionParts { x, nn: 0x65, .. } => Self::LoadMem { outreg_max: x },
-            _ => bail!("invalid category F instruction"),
+            _ => {
+                log::error!("invalid category F instruction {:X}", parts.full);
+                return None;
+            }
         })
     }
 }

@@ -1,7 +1,5 @@
 use std::ops::{Index, IndexMut};
 
-use anyhow::bail;
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Register {
     V0,
@@ -45,6 +43,31 @@ impl Register {
         let index = variants.into_iter().position(|x| x == max).unwrap();
         variants.into_iter().take(index + 1)
     }
+
+    pub fn from_u16(val: u16) -> Option<Self> {
+        Some(match val {
+            0 => Self::V0,
+            1 => Self::V1,
+            2 => Self::V2,
+            3 => Self::V3,
+            4 => Self::V4,
+            5 => Self::V5,
+            6 => Self::V6,
+            7 => Self::V7,
+            8 => Self::V8,
+            9 => Self::V9,
+            10 => Self::VA,
+            11 => Self::VB,
+            12 => Self::VC,
+            13 => Self::VD,
+            14 => Self::VE,
+            15 => Self::VF,
+            _ => {
+                log::error!("invalid register index");
+                return None;
+            }
+        })
+    }
 }
 
 #[derive(Debug, Default)]
@@ -72,32 +95,6 @@ impl Registers {
     pub fn new() -> Self {
         // Should init everything to 0
         Self::default()
-    }
-}
-
-impl TryFrom<u16> for Register {
-    type Error = anyhow::Error;
-
-    fn try_from(value: u16) -> Result<Self, Self::Error> {
-        Ok(match value {
-            0 => Self::V0,
-            1 => Self::V1,
-            2 => Self::V2,
-            3 => Self::V3,
-            4 => Self::V4,
-            5 => Self::V5,
-            6 => Self::V6,
-            7 => Self::V7,
-            8 => Self::V8,
-            9 => Self::V9,
-            10 => Self::VA,
-            11 => Self::VB,
-            12 => Self::VC,
-            13 => Self::VD,
-            14 => Self::VE,
-            15 => Self::VF,
-            _ => bail!("invalid register value"),
-        })
     }
 }
 

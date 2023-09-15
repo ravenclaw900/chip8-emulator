@@ -81,17 +81,14 @@ fn add(chip8: &mut Chip8, reg: Register, val: u8) {
     chip8.registers[reg] += val;
 }
 
-fn call_subroutine(chip8: &mut Chip8, addr: u16) -> anyhow::Result<()> {
-    chip8.stack.push(chip8.pc)?;
+fn call_subroutine(chip8: &mut Chip8, addr: u16) {
+    chip8.stack.push(chip8.pc);
     chip8.pc = addr;
-
-    Ok(())
 }
 
-fn return_subroutine(chip8: &mut Chip8) -> anyhow::Result<()> {
-    let addr = chip8.stack.pop()?;
+fn return_subroutine(chip8: &mut Chip8) {
+    let addr = chip8.stack.pop();
     chip8.pc = addr;
-    Ok(())
 }
 
 fn skip_eq(chip8: &mut Chip8, reg: Register, num: u8) {
@@ -236,20 +233,18 @@ fn set_sound_timer(chip8: &mut Chip8, inreg: Register) {
     chip8.sound_timer = chip8.registers[inreg];
 }
 
-fn skip_if_key(chip8: &mut Chip8, window: &Window, keyreg: Register) -> anyhow::Result<()> {
-    if keypad::is_key_pressed(window, chip8.registers[keyreg])? {
+fn skip_if_key(chip8: &mut Chip8, window: &Window, keyreg: Register) {
+    // If key is invalid, assume it isn't pressed
+    if keypad::is_key_pressed(window, chip8.registers[keyreg]).unwrap_or(false) {
         chip8.pc += 2;
     }
-
-    Ok(())
 }
 
-fn skip_if_not_key(chip8: &mut Chip8, window: &Window, keyreg: Register) -> anyhow::Result<()> {
-    if !keypad::is_key_pressed(window, chip8.registers[keyreg])? {
+fn skip_if_not_key(chip8: &mut Chip8, window: &Window, keyreg: Register) {
+    // If key is invalid, assume it isn't pressed
+    if !keypad::is_key_pressed(window, chip8.registers[keyreg]).unwrap_or(false) {
         chip8.pc += 2;
     }
-
-    Ok(())
 }
 
 impl Instruction {
@@ -259,7 +254,7 @@ impl Instruction {
         display_buf: &mut [u32],
         window: &Window,
         colors: &cli::Colors,
-    ) -> anyhow::Result<()> {
+    ) {
         match *self {
             Self::ClearDisplay => clear_display(display_buf, colors),
             Self::Set { reg, val } => set(chip8, reg, val),
@@ -269,8 +264,8 @@ impl Instruction {
             }
             Self::Jump { addr } => jump(chip8, addr),
             Self::Add { reg, val } => add(chip8, reg, val),
-            Self::CallSubroutine { addr } => call_subroutine(chip8, addr)?,
-            Self::ReturnSubroutine => return_subroutine(chip8)?,
+            Self::CallSubroutine { addr } => call_subroutine(chip8, addr),
+            Self::ReturnSubroutine => return_subroutine(chip8),
             Self::SkipEq { reg, num } => skip_eq(chip8, reg, num),
             Self::SkipNe { reg, num } => skip_ne(chip8, reg, num),
             Self::SkipEqReg { reg1, reg2 } => skip_eq_reg(chip8, reg1, reg2),
@@ -295,10 +290,8 @@ impl Instruction {
             Self::GetFontChar { inreg } => get_font_char(chip8, inreg),
             Self::JumpOffset { addr } => jump_offset(chip8, addr),
             Self::SetSoundTimer { inreg } => set_sound_timer(chip8, inreg),
-            Self::SkipIfKey { keyreg } => skip_if_key(chip8, window, keyreg)?,
-            Self::SkipIfNotKey { keyreg } => skip_if_not_key(chip8, window, keyreg)?,
+            Self::SkipIfKey { keyreg } => skip_if_key(chip8, window, keyreg),
+            Self::SkipIfNotKey { keyreg } => skip_if_not_key(chip8, window, keyreg),
         }
-
-        Ok(())
     }
 }

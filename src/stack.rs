@@ -1,5 +1,3 @@
-use anyhow::Context;
-
 const STACK_LEN: usize = 16;
 
 #[derive(Debug)]
@@ -16,22 +14,24 @@ impl Stack {
         }
     }
 
-    pub fn push(&mut self, val: u16) -> anyhow::Result<()> {
-        self.cur_idx += 1;
-        // Index should range from 0..STACK_LEN (exclusive) to not access out-of-bounds memory
-        anyhow::ensure!(self.cur_idx < STACK_LEN, "emulated program stack overflow");
+    pub fn push(&mut self, val: u16) {
+        // Index should range from 0..STACK_LEN (exclusive)
+        // Incremented at end of previous run, so if push is attempted and pointer is above max len,
+        // then stack will overflow (should crash here, non-recoverable error)
+        assert!(self.cur_idx < STACK_LEN, "emulated program stack overflow");
         self.data[self.cur_idx] = val;
-        Ok(())
+        self.cur_idx += 1;
     }
 
-    pub fn pop(&mut self) -> anyhow::Result<u16> {
-        let val = self.data[self.cur_idx];
+    pub fn pop(&mut self) -> u16 {
         // Make sure stack counter doesn't 'underflow' (wrap around)
-        // Old values are not overwritten, but shouldn't cause any problems
+        // Should crash, as program might expect non-existent value
         self.cur_idx = self
             .cur_idx
             .checked_sub(1)
-            .context("emulated program popped from empty stack")?;
-        Ok(val)
+            .expect("emulated program popped from empty stack");
+        // Old values are not overwritten, but shouldn't cause any problems
+        let val = self.data[self.cur_idx];
+        val
     }
 }
