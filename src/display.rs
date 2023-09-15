@@ -1,7 +1,7 @@
 use crate::{cli, WIDTH};
 
 #[derive(Clone, Copy)]
-pub enum DisplayMode {
+pub enum Mode {
     SetFalse,
     Toggle,
 }
@@ -11,7 +11,7 @@ pub fn write_to_buffer(
     buf: &mut [u32],
     x: usize,
     y: usize,
-    mode: DisplayMode,
+    mode: Mode,
     colors: &cli::Colors,
 ) -> bool {
     assert!((0..64).contains(&x), "x coordinate out of bounds");
@@ -21,8 +21,8 @@ pub fn write_to_buffer(
 
     let offset = (y * WIDTH) + x;
     let color = match mode {
-        DisplayMode::SetFalse => colors.background,
-        DisplayMode::Toggle => {
+        Mode::SetFalse => colors.background,
+        Mode::Toggle => {
             let current_state = buf[offset];
             if current_state == colors.background {
                 colors.foreground

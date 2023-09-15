@@ -11,7 +11,7 @@ fn clear_display(display_buf: &mut [u32], colors: &cli::Colors) {
                 display_buf,
                 x,
                 y,
-                crate::display::DisplayMode::SetFalse,
+                crate::display::Mode::SetFalse,
                 colors,
             );
         }
@@ -62,7 +62,7 @@ fn display(
                         display_buf,
                         start_x + x_offset,
                         start_y + y_offset,
-                        crate::display::DisplayMode::Toggle,
+                        crate::display::Mode::Toggle,
                         colors,
                     );
                     // Set VF register to either 1 or 0, depending on whether 2 sprites collided
@@ -248,6 +248,11 @@ fn skip_if_not_key(chip8: &mut Chip8, window: &Window, keyreg: Register) {
     }
 }
 
+pub enum DisplayModified {
+    Unchanged,
+    Changed,
+}
+
 impl Instruction {
     pub fn execute(
         &self,
@@ -255,13 +260,19 @@ impl Instruction {
         display_buf: &mut [u32],
         window: &Window,
         colors: &cli::Colors,
-    ) {
+    ) -> DisplayModified {
+        let mut modified = DisplayModified::Unchanged;
+
         match *self {
-            Self::ClearDisplay => clear_display(display_buf, colors),
+            Self::ClearDisplay => {
+                clear_display(display_buf, colors);
+                modified = DisplayModified::Changed;
+            }
             Self::Set { reg, val } => set(chip8, reg, val),
             Self::SetIndex { val } => set_index(chip8, val),
             Self::Display { xreg, yreg, height } => {
                 display(chip8, display_buf, xreg, yreg, height, colors);
+                modified = DisplayModified::Changed;
             }
             Self::Jump { addr } => jump(chip8, addr),
             Self::Add { reg, val } => add(chip8, reg, val),
@@ -294,5 +305,7 @@ impl Instruction {
             Self::SkipIfKey { keyreg } => skip_if_key(chip8, window, keyreg),
             Self::SkipIfNotKey { keyreg } => skip_if_not_key(chip8, window, keyreg),
         }
+
+        modified
     }
 }
